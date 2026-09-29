@@ -6,7 +6,7 @@ import typer
 
 from src.vbuild.api.client import APIClient
 from src.vbuild.utils.cli import get_rich_toolkit
-from src.vbuild.utils.config import config
+from src.vbuild.utils.config import Config, load_config_file
 from src.vbuild.utils.jcl_templates import (
     CompileBMSJClTemplate,
     CompileCICSCobolJCLTemplate,
@@ -22,7 +22,7 @@ class SourceCodeType(StrEnum):
     cics = "cics"
 
 
-def _get_jcl(source_code_type: SourceCodeType, member_name: str) -> str:
+def _get_jcl(source_code_type: SourceCodeType, member_name: str, config: Config) -> str:
     match source_code_type:
         case SourceCodeType.cobol:
             return CompileCobolJCLTemplate(
@@ -45,12 +45,16 @@ def _get_jcl(source_code_type: SourceCodeType, member_name: str) -> str:
             ).get_jcl()
 
 
-def _read_symbolic_map(client: APIClient, member_name: str) -> str:
-    return client.read_dataset(f"{config.symbolic_map_pds}({member_name})")
+def _read_symbolic_map(
+    client: APIClient, member_name: str, symbolic_map_pds: str
+) -> str:
+    return client.read_dataset(f"{symbolic_map_pds}({member_name})")
 
 
-def _write_symbolic_map(member_name: str, content: str) -> None:
-    with open(Path(config.symbolic_map_path) / f"{member_name.lower()}.cpy", "w") as f:
+def _write_symbolic_map(
+    member_name: str, content: str, symbolic_map_path: Path
+) -> None:
+    with open(Path(symbolic_map_path) / f"{member_name.lower()}.cpy", "w") as f:
         f.write(content)
 
 
@@ -66,6 +70,8 @@ def compile(
     ] = SourceCodeType.cobol,
 ):
     """Compile Cobol/BMS/CICS programs."""
+
+    config = load_config_file()
     toolkit = get_rich_toolkit()
     if not file_path.is_file():
         toolkit.print("No such file exist.")
@@ -74,9 +80,12 @@ def compile(
     source_code = file_path.read_text()
     member_name = file_path.stem.upper()
 
-    jcl = _get_jcl(source_code_type, member_name)
+    jcl = _get_jcl(source_code_type, member_name, config)
 
-    with get_rich_toolkit() as toolkit, APIClient() as client:  # noqa: SIM117
+    with (  # noqa: SIM117
+        get_rich_toolkit() as toolkit,
+        APIClient(host=config.host, port=config.port, verify=config.verify) as client,
+    ):
         with toolkit.progress("Compiling...", transient=True) as progress:
             with client.handle_http_error(progress):
                 client.write_dataset(
@@ -94,5 +103,9 @@ def compile(
                 source_code_type == SourceCodeType.bms
                 and job_output.return_code in SUCCESS_RETURN_CODES
             ):
-                generated_symbolic_map = _read_symbolic_map(client, member_name)
-                _write_symbolic_map(member_name, generated_symbolic_map)
+                generated_symbolic_map = _read_symbolic_map(
+                    client, member_name, config.symbolic_map_pds
+                )
+                _write_symbolic_map(
+                    member_name, generated_symbolic_map, config.symbolic_map_path
+                )

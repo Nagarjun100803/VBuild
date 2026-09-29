@@ -10,22 +10,24 @@ import typer
 from rich_toolkit.progress import Progress
 
 from src.vbuild.api._models import Job, JobFile
-from src.vbuild.utils.config import config
-
-BASE_URL = f"https://{config.host}:{config.port}/zosmf"
-
 
 POLL_TIMEOUT = timedelta(seconds=60)
 POLL_INTERVAL = 1
 
 
 class APIClient(httpx.Client):
-    def __init__(self, auth: tuple[str, str] | None = None) -> None:
+    def __init__(
+        self,
+        host: str,
+        port: int,
+        verify: bool = False,
+        auth: tuple[str, str] | None = None,
+    ) -> None:
         super().__init__(
-            base_url=BASE_URL,
+            base_url=f"https://{host}:{port}/zosmf",
             timeout=httpx.Timeout(5),
             headers={"X-CSRF-ZOSMF-HEADER": "*"},
-            verify=False,
+            verify=verify,
             auth=auth or ("vrex006", "shiva"),  # TODO Need to come from OS Keyring.
         )
 
@@ -101,9 +103,3 @@ class APIClient(httpx.Client):
             if job.return_code:
                 return job
             sleep(POLL_INTERVAL)
-
-
-if __name__ == "__main__":
-    client = APIClient()
-    content = client.read_dataset("VREX006.POC.SRCLIB1(SHIVA)")
-    print(content)

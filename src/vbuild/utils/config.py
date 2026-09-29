@@ -2,6 +2,8 @@ import tomllib
 from dataclasses import dataclass
 from pathlib import Path
 
+import typer
+
 
 @dataclass(frozen=True)
 class Config:
@@ -19,14 +21,19 @@ class Config:
     symbolic_map_path: Path
 
 
+# TODO: Need to pass the toolkit here to handle json output option.
+
+
 def load_config_file() -> Config:
     project_root = Path(__file__).parents[3]
     config_file = project_root / "vbuild.toml"
 
     if not config_file.is_file():
-        raise FileNotFoundError(
-            "Error: No `vbuild.toml` is found in a project directory."
+        typer.secho(
+            "Error: No `vbuild.toml` is found in a project directory. Run 'vbuild init' to initialize it.",
+            err=True,
         )
+        raise typer.Exit(1)
 
     with open(config_file, "rb") as f:
         content = tomllib.load(f)
@@ -38,6 +45,3 @@ def load_config_file() -> Config:
             **remote_datasets,
             **{key: Path(val).absolute() for key, val in local_files.items()},
         )
-
-
-config = load_config_file()
