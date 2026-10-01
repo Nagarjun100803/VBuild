@@ -3,9 +3,11 @@ words = [
     "Correlator",
     "ZOSMF",
     "bms",
+    "cbl",
     "cpy",
     "jcl",
     "pds",
+    "pyright",
     "typer",
     "vbuild",
 ]
