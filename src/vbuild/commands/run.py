@@ -4,6 +4,7 @@ from typing import Annotated
 import typer
 
 from src.vbuild.api.client import APIClient
+from src.vbuild.utils._shared import SUCCESS_RETURN_CODES
 from src.vbuild.utils.cli import get_rich_toolkit
 from src.vbuild.utils.config import load_config_file
 from src.vbuild.utils.jcl_templates import RunCobolJCLTemplate
@@ -15,9 +16,6 @@ def _get_jcl(member_name: str, load_library_pds: str) -> str:
     return RunCobolJCLTemplate(
         load_library_pds=load_library_pds, load_library_member=member_name
     ).get_jcl()
-
-
-SUCCESS_RETURN_CODES = ("CC 0000", "CC 0004")
 
 
 @run_app.command(name="run")

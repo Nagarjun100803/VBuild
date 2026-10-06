@@ -1,5 +1,6 @@
 import typer
 
+from src.vbuild.commands.build import build_app
 from src.vbuild.commands.compile import compile_app
 from src.vbuild.commands.init import init_app
 from src.vbuild.commands.run import run_app
@@ -13,6 +14,7 @@ app = typer.Typer(
 app.add_typer(init_app)
 app.add_typer(compile_app)
 app.add_typer(run_app)
+app.add_typer(build_app)
 
 if __name__ == "__main__":
     app()

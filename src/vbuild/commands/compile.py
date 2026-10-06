@@ -1,48 +1,15 @@
-from enum import StrEnum
 from pathlib import Path
 from typing import Annotated
 
 import typer
 
 from src.vbuild.api.client import APIClient
+from src.vbuild.utils._shared import SUCCESS_RETURN_CODES, get_jcl
 from src.vbuild.utils.cli import get_rich_toolkit
-from src.vbuild.utils.config import Config, load_config_file
-from src.vbuild.utils.jcl_templates import (
-    CompileBMSJClTemplate,
-    CompileCICSCobolJCLTemplate,
-    CompileCobolJCLTemplate,
-)
+from src.vbuild.utils.config import load_config_file
+from src.vbuild.utils.meta import SourceCodeType
 
 compile_app = typer.Typer(rich_markup_mode="rich", no_args_is_help=True)
-
-
-class SourceCodeType(StrEnum):
-    cobol = "cobol"
-    bms = "bms"
-    cics = "cics"
-
-
-def _get_jcl(source_code_type: SourceCodeType, member_name: str, config: Config) -> str:
-    match source_code_type:
-        case SourceCodeType.cobol:
-            return CompileCobolJCLTemplate(
-                copy_library_pds=config.copy_library_pds,
-                source_library_pds=config.source_library_pds,
-                load_library_pds=config.load_library_pds,
-                source_library_member=member_name,
-            ).get_jcl()
-        case SourceCodeType.cics:
-            return CompileCICSCobolJCLTemplate(
-                source_library_pds=config.source_library_pds,
-                source_library_member=member_name,
-                symbolic_map_pds=config.symbolic_map_pds,
-            ).get_jcl()
-        case SourceCodeType.bms:
-            return CompileBMSJClTemplate(
-                source_library_pds=config.source_library_pds,
-                source_library_member=member_name,
-                symbolic_map_pds=config.symbolic_map_pds,
-            ).get_jcl()
 
 
 def _read_symbolic_map(
@@ -56,9 +23,6 @@ def _write_symbolic_map(
 ) -> None:
     with open(Path(symbolic_map_path) / f"{member_name.lower()}.cpy", "w") as f:
         f.write(content)
-
-
-SUCCESS_RETURN_CODES = ("CC 0000", "CC 0004")
 
 
 @compile_app.command(name="compile")
@@ -80,7 +44,7 @@ def compile(
     source_code = file_path.read_text()
     member_name = file_path.stem.upper()
 
-    jcl = _get_jcl(source_code_type, member_name, config)
+    jcl = get_jcl(source_code_type, member_name, config)
 
     with (  # noqa: SIM117
         get_rich_toolkit() as toolkit,
