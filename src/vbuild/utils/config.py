@@ -10,6 +10,7 @@ class Config:
     host: str
     port: int
     verify: bool
+    user_id: str
 
     source_library_pds: str
     copy_library_pds: str
@@ -19,6 +20,10 @@ class Config:
     source_library_path: Path
     copy_library_path: Path
     symbolic_map_path: Path
+
+    @property
+    def _username(self) -> str:
+        return self.user_id.lower()
 
 
 # TODO: Need to pass the toolkit here to handle json output option.

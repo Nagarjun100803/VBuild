@@ -4,10 +4,12 @@ words = [
     "ZOSMF",
     "bms",
     "cbl",
+    "cli",
     "cpy",
     "jcl",
     "pds",
     "pyright",
     "typer",
     "vbuild",
+    "whoami",
 ]

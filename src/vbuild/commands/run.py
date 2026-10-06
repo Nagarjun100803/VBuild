@@ -42,7 +42,6 @@ def run(file_path: Annotated[Path, typer.Argument(help="File path to run.")]):
                 output_content = client.get_job_output(
                     job_name=job_output.job_name, job_id=job_output.job_id
                 )
-                toolkit.print(f"😀 Return Code: {job_output.return_code}")
                 toolkit.print(f"[bold]{output_content}[/]")
             else:
                 toolkit.print(f"😔 Return Code : {job_output.return_code}")

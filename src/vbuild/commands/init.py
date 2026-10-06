@@ -14,6 +14,7 @@ config_template = """[zosmf]
 host=
 port=
 verify=
+user_id=
 
 [remote_datasets]
 source_library_pds=

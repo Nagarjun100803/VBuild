@@ -1,9 +1,12 @@
 import typer
 
-from src.vbuild.commands.build import build_app
-from src.vbuild.commands.compile import compile_app
-from src.vbuild.commands.init import init_app
-from src.vbuild.commands.run import run_app
+from src.vbuild.commands import (
+    auth_app,
+    build_app,
+    compile_app,
+    init_app,
+    run_app,
+)
 
 app = typer.Typer(
     no_args_is_help=True,
@@ -12,6 +15,7 @@ app = typer.Typer(
 )
 
 app.add_typer(init_app)
+app.add_typer(auth_app)
 app.add_typer(compile_app)
 app.add_typer(run_app)
 app.add_typer(build_app)
