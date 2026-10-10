@@ -20,5 +20,7 @@ app.add_typer(compile_app)
 app.add_typer(run_app)
 app.add_typer(build_app)
 
-if __name__ == "__main__":
+
+def main() -> None:
+    """Main entry point of the vbuild cli."""
     app()
