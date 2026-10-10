@@ -9,7 +9,7 @@ import httpx
 import typer
 from rich_toolkit.progress import Progress
 
-from src.vbuild.api._models import Job, JobFile
+from vbuild.api._models import Job, JobFile
 
 POLL_TIMEOUT = timedelta(seconds=60)
 POLL_INTERVAL = 1

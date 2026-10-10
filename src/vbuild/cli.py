@@ -1,6 +1,6 @@
 import typer
 
-from src.vbuild.commands import (
+from vbuild.commands import (
     auth_app,
     build_app,
     compile_app,

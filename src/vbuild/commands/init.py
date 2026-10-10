@@ -2,7 +2,7 @@ from pathlib import Path
 
 import typer
 
-from src.vbuild.utils.cli import get_rich_toolkit
+from vbuild.utils.cli import get_rich_toolkit
 
 init_app = typer.Typer(rich_markup_mode="rich")
 

@@ -3,12 +3,12 @@ from typing import Annotated
 
 import typer
 
-from src.vbuild.api.client import APIClient
-from src.vbuild.utils._shared import SUCCESS_RETURN_CODES, get_jcl
-from src.vbuild.utils.authentication import resolve_credentials
-from src.vbuild.utils.cli import get_rich_toolkit
-from src.vbuild.utils.config import load_config_file
-from src.vbuild.utils.meta import SourceCodeType
+from vbuild.api.client import APIClient
+from vbuild.utils._shared import SUCCESS_RETURN_CODES, get_jcl
+from vbuild.utils.authentication import resolve_credentials
+from vbuild.utils.cli import get_rich_toolkit
+from vbuild.utils.config import load_config_file
+from vbuild.utils.meta import SourceCodeType
 
 compile_app = typer.Typer(rich_markup_mode="rich", no_args_is_help=True)
 

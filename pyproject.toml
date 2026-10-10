@@ -12,3 +12,6 @@ dependencies = [
     "rich-toolkit>=0.20.5",
     "typer>=0.27.2",
 ]
+
+[project.scripts]
+vbuild = "vbuild.cli:main"

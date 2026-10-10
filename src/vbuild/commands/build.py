@@ -11,11 +11,11 @@ from rich.progress import (
     TimeElapsedColumn,
 )
 
-from src.vbuild.api.client import APIClient
-from src.vbuild.utils._shared import SUCCESS_RETURN_CODES, get_jcl
-from src.vbuild.utils.authentication import resolve_credentials
-from src.vbuild.utils.config import load_config_file
-from src.vbuild.utils.meta import SourceFileMeta, load_files_metadata
+from vbuild.api.client import APIClient
+from vbuild.utils._shared import SUCCESS_RETURN_CODES, get_jcl
+from vbuild.utils.authentication import resolve_credentials
+from vbuild.utils.config import load_config_file
+from vbuild.utils.meta import SourceFileMeta, load_files_metadata
 
 
 class CircularDependencyError(Exception): ...

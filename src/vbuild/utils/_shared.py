@@ -1,10 +1,10 @@
-from src.vbuild.utils.config import Config
-from src.vbuild.utils.jcl_templates import (
+from vbuild.utils.config import Config
+from vbuild.utils.jcl_templates import (
     CompileBMSJClTemplate,
     CompileCICSCobolJCLTemplate,
     CompileCobolJCLTemplate,
 )
-from src.vbuild.utils.meta import SourceCodeType
+from vbuild.utils.meta import SourceCodeType
 
 SUCCESS_RETURN_CODES = ("CC 0000", "CC 0004")
 

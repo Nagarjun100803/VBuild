@@ -2,14 +2,14 @@ import rich
 import typer
 from keyring.errors import PasswordDeleteError
 
-from src.vbuild.api.client import APIClient
-from src.vbuild.utils.authentication import (
+from vbuild.api.client import APIClient
+from vbuild.utils.authentication import (
     delete_password,
     get_password,
     resolve_credentials,
     set_password,
 )
-from src.vbuild.utils.config import Config, load_config_file
+from vbuild.utils.config import Config, load_config_file
 
 auth_app = typer.Typer(rich_markup_mode="rich")
 

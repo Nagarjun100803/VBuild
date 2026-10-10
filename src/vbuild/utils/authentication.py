@@ -7,7 +7,7 @@ import rich
 import typer
 from pydantic import BaseModel, SecretStr
 
-from src.vbuild.utils.config import load_config_file
+from vbuild.utils.config import load_config_file
 
 SERVICE_NAME = "vbuild"
 
