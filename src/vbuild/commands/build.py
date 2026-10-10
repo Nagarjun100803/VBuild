@@ -1,6 +1,7 @@
 from collections import defaultdict, deque
 from pathlib import Path
 
+import rich
 import typer
 from rich.progress import (
     Progress,
@@ -12,6 +13,7 @@ from rich.progress import (
 
 from src.vbuild.api.client import APIClient
 from src.vbuild.utils._shared import SUCCESS_RETURN_CODES, get_jcl
+from src.vbuild.utils.authentication import resolve_credentials
 from src.vbuild.utils.config import load_config_file
 from src.vbuild.utils.meta import SourceFileMeta, load_files_metadata
 
@@ -67,7 +69,9 @@ def build():
     "Build the programs files"
 
     # NOTE Assume the target folder is scanned and metadata extracted by one method/service
-    # and put it in the `.vbuild.meta.json` We use that file to build.
+    # * and put it in the `.vbuild.meta.json` We use that file to build.
+
+    credentials = resolve_credentials()
 
     config = load_config_file()
     all_program_files: dict[str, SourceFileMeta] = get_build_order()
@@ -81,7 +85,12 @@ def build():
         else:
             program_files.append(file_path)
 
-    with APIClient(host=config.host, port=config.port, verify=config.verify) as client:  # noqa: SIM117
+    with APIClient(  # noqa: SIM117
+        host=config.host,
+        port=config.port,
+        verify=config.verify,
+        auth=(credentials.username, credentials.password.get_secret_value()),
+    ) as client:
         with Progress(
             SpinnerColumn(),
             TextColumn("{task.description}"),
@@ -125,4 +134,4 @@ def build():
                     # TODO: Fetch spool for that particular job and display the error from mainframe.
                     raise typer.Exit(1)
             total_time_taken = progress.tasks[task_id].elapsed
-    typer.echo(f"Build successful in {total_time_taken:.2f}s.🚀")
+    rich.print(f"Build successful in {total_time_taken:.2f}s.🚀")

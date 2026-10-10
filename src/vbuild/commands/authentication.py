@@ -1,3 +1,4 @@
+import rich
 import typer
 from keyring.errors import PasswordDeleteError
 
@@ -32,27 +33,27 @@ def login():
     config = load_config_file()
     existing_password = get_password(username=config._username)
     if existing_password:
-        typer.echo("Already logged in.")
+        rich.print("Already logged in.")
         want_to_login_as_different_user = typer.confirm(
             "Want to login as different user"
         )
         if want_to_login_as_different_user:
-            typer.echo(
+            rich.print(
                 "Follow the steps to login as different user.\n"
-                "1.Change the [bold]user_id[/] field in [bold]vbuild.toml[/]\n"
-                "2.Run [bold]vbuild logout[/]\n"
-                "3.Run [bold]vbuild login[/]"
+                "1.Change the 'user_id' field in 'vbuild.toml'\n"
+                "2.Run 'vbuild logout'\n"
+                "3.Run 'vbuild login'"
             )
         raise typer.Exit(0)
 
-    typer.echo(f"Logging in as [bold]{config.user_id}[/]")
+    rich.print(f"Logging in as [bold]{config.user_id}[/]")
     password: str = typer.prompt("Password", hide_input=True)
     if _is_valid_cred(config._username, password, config):
         set_password(config._username, password)
         del password  # Remove from the memory.
-        typer.echo("Login success.🚀")
+        rich.print("Login success.🚀")
     else:
-        typer.echo("Invalid user_id or password.")
+        rich.print("Invalid user_id or password.")
 
 
 @auth_app.command(name="logout")
@@ -64,7 +65,7 @@ def logout():
         delete_password(config._username)
     except PasswordDeleteError:
         ...
-    typer.echo("Logged out.")
+    rich.print("Logged out.")
 
 
 @auth_app.command(name="ping")
@@ -73,11 +74,12 @@ def ping():
 
     config = load_config_file()
     credentials = resolve_credentials()
+    # FIXME: Need to check the network reachability when cred type = "os".
     if credentials.type == "env" and not _is_valid_cred(
         username=credentials.username,
         password=credentials.password.get_secret_value(),
         config=config,
     ):
-        typer.echo("Invalid credentials.")
+        rich.print("Invalid credentials.")
     else:
-        typer.echo("pong")
+        rich.print("pong")

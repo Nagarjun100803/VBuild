@@ -5,6 +5,7 @@ import typer
 
 from src.vbuild.api.client import APIClient
 from src.vbuild.utils._shared import SUCCESS_RETURN_CODES, get_jcl
+from src.vbuild.utils.authentication import resolve_credentials
 from src.vbuild.utils.cli import get_rich_toolkit
 from src.vbuild.utils.config import load_config_file
 from src.vbuild.utils.meta import SourceCodeType
@@ -35,8 +36,10 @@ def compile(
 ):
     """Compile Cobol/BMS/CICS programs."""
 
+    credentials = resolve_credentials()
     config = load_config_file()
     toolkit = get_rich_toolkit()
+
     if not file_path.is_file():
         toolkit.print("No such file exist.")
         raise typer.Exit(1)
@@ -48,7 +51,12 @@ def compile(
 
     with (  # noqa: SIM117
         get_rich_toolkit() as toolkit,
-        APIClient(host=config.host, port=config.port, verify=config.verify) as client,
+        APIClient(
+            host=config.host,
+            port=config.port,
+            verify=config.verify,
+            auth=(credentials.username, credentials.password.get_secret_value()),
+        ) as client,
     ):
         with toolkit.progress("Compiling...", transient=True) as progress:
             with client.handle_http_error(progress):

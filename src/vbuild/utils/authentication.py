@@ -3,6 +3,7 @@ import sys
 from typing import Literal
 
 import keyring
+import rich
 import typer
 from pydantic import BaseModel, SecretStr
 
@@ -32,7 +33,7 @@ def resolve_credentials() -> Credentials:
 
     if password_env:
         if sys.stdin.isatty():
-            typer.echo("Warning: Using environment variables for local dev workflow.")
+            rich.print("Warning: Using environment variables for local dev workflow.")
         return Credentials(
             username=config._username, password=SecretStr(password_env), type="env"
         )
@@ -42,7 +43,7 @@ def resolve_credentials() -> Credentials:
         service_name=SERVICE_NAME, username=config._username
     )
     if not password:
-        typer.echo("Error: Not authenticated, Run 'vbuild login'.")
+        rich.print("Error: Not authenticated, Run 'vbuild login'.")
         raise typer.Exit(1)
 
     return Credentials(

@@ -20,15 +20,15 @@ class APIClient(httpx.Client):
         self,
         host: str,
         port: int,
+        auth: tuple[str, str],
         verify: bool = False,
-        auth: tuple[str, str] | None = None,
     ) -> None:
         super().__init__(
             base_url=f"https://{host}:{port}/zosmf",
             timeout=httpx.Timeout(5),
             headers={"X-CSRF-ZOSMF-HEADER": "*"},
             verify=verify,
-            auth=auth or ("vrex006", "shiva"),  # TODO Need to come from OS Keyring.
+            auth=auth,
         )
 
     @contextmanager

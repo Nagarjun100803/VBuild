@@ -5,6 +5,7 @@ import typer
 
 from src.vbuild.api.client import APIClient
 from src.vbuild.utils._shared import SUCCESS_RETURN_CODES
+from src.vbuild.utils.authentication import resolve_credentials
 from src.vbuild.utils.cli import get_rich_toolkit
 from src.vbuild.utils.config import load_config_file
 from src.vbuild.utils.jcl_templates import RunCobolJCLTemplate
@@ -22,8 +23,10 @@ def _get_jcl(member_name: str, load_library_pds: str) -> str:
 def run(file_path: Annotated[Path, typer.Argument(help="File path to run.")]):
     """Run the Cobol program."""
 
+    credentials = resolve_credentials()
     config = load_config_file()
     toolkit = get_rich_toolkit()
+
     if not file_path.is_file():
         toolkit.print("No such file exist.")
         raise typer.Exit(1)
@@ -31,7 +34,12 @@ def run(file_path: Annotated[Path, typer.Argument(help="File path to run.")]):
     member_name = file_path.stem.upper()
     jcl = _get_jcl(member_name, config.load_library_pds)
 
-    with APIClient(host=config.host, port=config.port, verify=config.verify) as client:  # noqa: SIM117
+    with APIClient(  # noqa: SIM117
+        host=config.host,
+        port=config.port,
+        verify=config.verify,
+        auth=(credentials.username, credentials.password.get_secret_value()),
+    ) as client:
         with toolkit.progress("Running...", transient=True) as progress:
             with client.handle_http_error(progress):
                 job = client.submit_job(jcl)
