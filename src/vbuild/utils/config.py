@@ -2,6 +2,7 @@ import tomllib
 from dataclasses import dataclass
 from pathlib import Path
 
+import rich
 import typer
 
 
@@ -29,18 +30,21 @@ class Config:
 # TODO: Need to pass the toolkit here to handle json output option.
 
 
-def load_config_file() -> Config:
-    project_root = Path(__file__).parents[3]
-    config_file = project_root / "vbuild.toml"
+def load_config_file(start: Path | None = None) -> Config:
+    current = (start or Path.cwd()).resolve()
 
-    if not config_file.is_file():
-        typer.secho(
+    target_directory: Path | None = None
+    for directory in (current, *current.parents):
+        if (directory / "vbuild.toml").is_file():
+            target_directory = directory
+
+    if target_directory is None:
+        rich.print(
             "Error: No `vbuild.toml` is found in a project directory. Run 'vbuild init' to initialize it.",
-            err=True,
         )
         raise typer.Exit(1)
 
-    with open(config_file, "rb") as f:
+    with open(target_directory / "vbuild.toml", "rb") as f:
         content = tomllib.load(f)
         zosmf = content["zosmf"]
         remote_datasets = content["remote_datasets"]
