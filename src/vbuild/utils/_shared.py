@@ -6,6 +6,8 @@ from vbuild.utils.jcl_templates import (
 )
 from vbuild.utils.meta import SourceCodeType
 
+APP_NAME = "vbuild"
+
 SUCCESS_RETURN_CODES = ("CC 0000", "CC 0004")
 
 

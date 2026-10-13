@@ -1,5 +1,7 @@
 from collections import defaultdict, deque
+from datetime import UTC, datetime
 from pathlib import Path
+from uuid import uuid4
 
 import rich
 import typer
@@ -12,9 +14,10 @@ from rich.progress import (
 )
 
 from vbuild.api.client import APIClient
-from vbuild.utils._shared import SUCCESS_RETURN_CODES, get_jcl
+from vbuild.utils._shared import APP_NAME, SUCCESS_RETURN_CODES, get_jcl
 from vbuild.utils.authentication import resolve_credentials
 from vbuild.utils.config import load_config_file
+from vbuild.utils.diff import Commit, get_last_commit
 from vbuild.utils.meta import SourceFileMeta, load_files_metadata
 
 
@@ -64,6 +67,52 @@ def get_build_order() -> dict[str, SourceFileMeta]:
 build_app = typer.Typer(rich_markup_mode="rich")
 
 
+def write_build_log(commit: Commit, elapsed_time: float):
+
+    build_id = uuid4()
+    current_datetime = datetime.now(tz=UTC)
+
+    build_log_template = """
+Build id: {build_id}
+Build date: {build_date}
+Elapsed time: {elapsed_time} seconds
+Build status: {build_status}
+
+Commit: {commit_hash}
+Author: {commit_author}
+Commit Date: {commit_date}
+Description: {commit_description}
+
+Number of files affected: {num_of_files_affected}
+Files:
+{affected_files}
+    """.format(
+        build_id=uuid4(),
+        build_date=current_datetime,
+        elapsed_time=elapsed_time,
+        commit_hash=commit.hash,
+        commit_description=commit.message,
+        commit_author=commit.author,
+        commit_date=commit.date,
+        num_of_files_affected=len(commit.affected_files),
+        build_status="Success",
+        affected_files="\n".join(
+            [
+                f"{i}. {f.as_posix()}"
+                for i, f in enumerate(commit.affected_files, start=1)
+            ]
+        ),
+    )
+    app_directory = Path(typer.get_app_dir(APP_NAME))
+    naming_convention = f"{current_datetime.strftime('%d-%m-%Y')}-{str(build_id)[-6:]}"
+    build_directory = app_directory / naming_convention
+    build_directory.mkdir(exist_ok=True, parents=True)
+
+    # Write the content.
+    with open(build_directory / "log.txt", "w", encoding="utf-8") as f:
+        f.write(build_log_template)
+
+
 @build_app.command(name="build")
 def build():
     "Build the programs files"
@@ -85,7 +134,7 @@ def build():
         else:
             program_files.append(file_path)
 
-    with APIClient(  # noqa: SIM117
+    with APIClient(
         host=config.host,
         port=config.port,
         verify=config.verify,
@@ -134,4 +183,5 @@ def build():
                     # TODO: Fetch spool for that particular job and display the error from mainframe.
                     raise typer.Exit(1)
             total_time_taken = progress.tasks[task_id].elapsed
-    rich.print(f"Build successful in {total_time_taken:.2f}s.🚀")
+        write_build_log(get_last_commit(), elapsed_time=total_time_taken)  # pyright: ignore[reportArgumentType]
+    rich.print(f"Build successful in {total_time_taken:.2f}s.")
