@@ -31,4 +31,5 @@ def get_jcl(source_code_type: SourceCodeType, member_name: str, config: Config) 
                 source_library_pds=config.source_library_pds,
                 source_library_member=member_name,
                 symbolic_map_pds=config.symbolic_map_pds,
+                load_library_member=config.load_library_pds,
             ).get_jcl()

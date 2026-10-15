@@ -147,6 +147,12 @@ def build():
             TimeElapsedColumn(),
             transient=True,
         ) as progress:
+            for copy_book in copy_books:
+                content = Path(copy_book).read_text(encoding="utf-8")
+                client.write_dataset(
+                    name=f"{config.copy_library_pds}({Path(copy_book).stem.upper()})",
+                    content=content,
+                )
             task_id = progress.add_task("Building...🛠️", total=len(program_files))
             for file_path in program_files:
                 file_path = Path(file_path)

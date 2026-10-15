@@ -1,11 +1,11 @@
 import json
 from enum import StrEnum
 from pathlib import Path
-from typing import Literal
+from typing import Literal, Self
 
 import rich
 import typer
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class SourceCodeType(StrEnum):
@@ -17,6 +17,11 @@ class SourceCodeType(StrEnum):
 class StaticCallMeta(BaseModel):
     name: str
     path: Path
+
+    @model_validator(mode="after")
+    def validate_path(self) -> Self:
+        self.path = self.path.resolve()
+        return self
 
 
 class SourceFileMeta(BaseModel):
@@ -42,6 +47,6 @@ def load_files_metadata(start: Path | None = None) -> dict[str, SourceFileMeta]:
         content = json.load(f)
 
     return {
-        file_path: SourceFileMeta(**metadata)
+        Path(file_path).resolve().as_posix(): SourceFileMeta(**metadata)
         for file_path, metadata in content["program_files"].items()
     }

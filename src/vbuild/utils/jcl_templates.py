@@ -22,10 +22,10 @@ class CompileCobolJCLTemplate(JCLTemplate):
         //**********************************************************************
         //*                           INPUT AREA                               *
         //**********************************************************************
-        //  SET MEMBER={source_library_member}                 <== YOUR MEMBER NAME
-        //  SET SOURCE={source_library_pds}            <== YOUR COBOL LIBRARY
-        //  SET COPYLIB={copy_library_pds}             <== YOUR COPY LIBRARY
-        //  SET LOADLIB={load_library_pds}             <== YOUR LOAD LIBRARY
+        //  SET MEMBER='{source_library_member}'
+        //  SET SOURCE='{source_library_pds}'
+        //  SET COPYLIB='{copy_library_pds}'
+        //  SET LOADLIB='{load_library_pds}'
         //  SET LNGPRFX='IGY640'
         //  SET LIBPRFX='CEE'
         //**********************************************************************
@@ -82,8 +82,8 @@ class RunCobolJCLTemplate(JCLTemplate):
         //*
         //* RUN COBOL PROGRAM
         //*
-        //STEP1    EXEC PGM={load_library_member}      <== YOUR LOAD LIBRARY
-        //STEPLIB  DD DISP=SHR,DSN={load_library_pds}  <== YOUR PROGRAM
+        //STEP1    EXEC PGM={load_library_member}
+        //STEPLIB  DD DISP=SHR,DSN='{load_library_pds}'
         //SYSOUT   DD SYSOUT=*
         //OUTDD    DD SYSOUT=*
         //*
@@ -100,19 +100,19 @@ class CompileCICSCobolJCLTemplate(JCLTemplate):
         return """
         //COMPCICS JOB REGION=0M,NOTIFY=&SYSUID
         //*---------------------------------------------------------------------
-        //  SET  SRCLIB={source_library_pds}
-        //  SET  MEMBER={source_library_member}
-        //  SET  SYMMAP={symbolic_map_pds}
+        //  SET  SRCLIB='{source_library_pds}'
+        //  SET  MEMBER='{source_library_member}'
+        //  SET  SYMMAP='{symbolic_map_pds}'
         //*---------------------------------------------------------------------
         //*
         //  SET  SUFFIX='1$'
-        //  SET  INDEX='DFH610.CICS'         QUALIFIER(S) FOR CICS LIBRARIES
-        //  SET  COMPHLQ='IGY640'            QUALIFIER(S) FOR COBOL COMPILER
-        //  SET  REG=2M                      REGION SIZE FOR ALL STEPS
-        //  SET  LNKPARM='LIST,XREF'         LINK EDIT PARAMETERS
-        //  SET  STUB='DFHEILIC'             LINK EDIT INCLUDE FOR DFHECI
-        //  SET  LIB='SDFHCOB'               LIBRARY
-        //  SET  WORK='SYDA'                 UNIT FOR WORK DATASETS
+        //  SET  INDEX='DFH610.CICS'
+        //  SET  COMPHLQ='IGY640'
+        //  SET  REG=2M
+        //  SET  LNKPARM='LIST,XREF'
+        //  SET  STUB='DFHEILIC'
+        //  SET  LIB='SDFHCOB'
+        //  SET  WORK='SYDA'
         //*---------------------------------------------------------------------
         //*      THIS PROCEDURE CONTAINS 4 STEPS
         //*      1.   EXEC THE COBOL TRANSLATOR
@@ -189,6 +189,7 @@ class CompileCICSCobolJCLTemplate(JCLTemplate):
 class CompileBMSJClTemplate(JCLTemplate):
     source_library_pds: str
     source_library_member: str
+    load_library_member: str
     symbolic_map_pds: str
 
     def get_jcl(self) -> str:
@@ -196,27 +197,14 @@ class CompileBMSJClTemplate(JCLTemplate):
         //COMPBMS JOB NOTIFY=&SYSUID
         //         JCLLIB ORDER=VREX006.POC.PROCLIB
         //*----------------------------------------------------------------
-        //         SET MEMBER={source_library_member}
-        //         SET SRCLIB={source_library_pds}
-        //         SET SYMMAP={symbolic_map_pds}
+        //         SET MEMBER='{source_library_member}'
+        //         SET SRCLIB='{source_library_pds}'
+        //         SET SYMMAP='{symbolic_map_pds}'
+        //         SET LOADLIB='{load_library_member}'
         //*----------------------------------------------------------------
         //STEP01      EXEC PROC=BMSPROC
         //C.SYSIN     DD DSN=&SRCLIB(&MEMBER),DISP=SHR
-        //L.SYSLMOD   DD DSN=DFH610.CICS.APPLLOAD(&MEMBER),DISP=SHR
+        //L.SYSLMOD   DD DSN=&LOADLIB(&MEMBER),DISP=SHR
         //CSYM.SYSIN  DD DSN=&SRCLIB(&MEMBER),DISP=SHR
         //CSYM.SYSLIN DD DSN=&SYMMAP(&MEMBER),DISP=SHR
         """.format(**self.__dict__)
-
-
-if __name__ == "__main__":
-    import textwrap
-
-    print(
-        textwrap.dedent(
-            CompileBMSJClTemplate(
-                source_library_pds="VREX006.POC.SRCLIB1",
-                source_library_member="CUSTMAP",
-                symbolic_map_pds="VREX006.POC.SYMMAP",
-            ).get_jcl()
-        )
-    )
