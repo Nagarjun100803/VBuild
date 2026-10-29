@@ -12,3 +12,5 @@ wheels/
 # Sample code
 cobol/
 vbuild.toml
+.vbuild.meta.json
+logs

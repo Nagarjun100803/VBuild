@@ -5,7 +5,7 @@ from vbuild.commands import (
     build_app,
     compile_app,
     init_app,
-    run_app,
+    # run_app,
 )
 
 app = typer.Typer(
@@ -17,7 +17,7 @@ app = typer.Typer(
 app.add_typer(init_app)
 app.add_typer(auth_app)
 app.add_typer(compile_app)
-app.add_typer(run_app)
+# app.add_typer(run_app)
 app.add_typer(build_app)
 
 

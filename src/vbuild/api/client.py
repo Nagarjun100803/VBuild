@@ -87,6 +87,15 @@ class APIClient(httpx.Client):
         response.raise_for_status()
         return [JobFile.model_validate(file) for file in response.json()]
 
+    def get_job_logs(self, job_name: str, job_id: str) -> dict[str, str]:
+        log_files = self.get_job_files(job_name=job_name, job_id=job_id)
+        logs: dict[str, str] = {}
+        for log_file in log_files:
+            response = self.get(log_file.records_url)
+            response.raise_for_status()
+            logs.update({log_file.dd_name: response.content.decode()})
+        return logs
+
     def get_job_output(self, job_name: str, job_id: str) -> str:
         response = self.get(
             f"/restjobs/jobs/{quote(job_name, safe='')}/{quote(job_id, safe='')}/files/101/records"

@@ -8,22 +8,9 @@ from vbuild.utils._shared import SUCCESS_RETURN_CODES, get_jcl
 from vbuild.utils.authentication import resolve_credentials
 from vbuild.utils.cli import get_rich_toolkit
 from vbuild.utils.config import load_config_file
-from vbuild.utils.meta import SourceCodeType
+from vbuild.utils.jcls import SourceCodeType
 
 compile_app = typer.Typer(rich_markup_mode="rich", no_args_is_help=True)
-
-
-def _read_symbolic_map(
-    client: APIClient, member_name: str, symbolic_map_pds: str
-) -> str:
-    return client.read_dataset(f"{symbolic_map_pds}({member_name})")
-
-
-def _write_symbolic_map(
-    member_name: str, content: str, symbolic_map_path: Path
-) -> None:
-    with open(Path(symbolic_map_path) / f"{member_name.lower()}.cpy", "w") as f:
-        f.write(content)
 
 
 @compile_app.command(name="compile")
@@ -32,9 +19,9 @@ def compile(
     source_code_type: Annotated[
         SourceCodeType,
         typer.Option("--source-code-type", "-sct", help="Source code type."),
-    ] = SourceCodeType.cobol,
+    ],
 ):
-    """Compile Cobol/BMS/CICS programs."""
+    """Compile APA/APB/APC/ONL/BMS/ASM programs."""
 
     credentials = resolve_credentials()
     config = load_config_file()
@@ -67,17 +54,11 @@ def compile(
 
             # TODO: Need to Handle TimeoutError.
             job_output = client.poll_job(job_name=job.job_name, job_id=job.job_id)
-            toolkit.print(
-                f"Return code: {job_output.return_code} ",
-                emoji="😀" if job_output.return_code in SUCCESS_RETURN_CODES else "😔",
-            )
-            if (
-                source_code_type == SourceCodeType.bms
-                and job_output.return_code in SUCCESS_RETURN_CODES
-            ):
-                generated_symbolic_map = _read_symbolic_map(
-                    client, member_name, config.symbolic_map_pds
+            if job_output.return_code in SUCCESS_RETURN_CODES:
+                toolkit.print(f"Return Code: {job_output.return_code}")
+            else:
+                logs = client.get_job_logs(
+                    job_name=job_output.job_name, job_id=job_output.job_id
                 )
-                _write_symbolic_map(
-                    member_name, generated_symbolic_map, config.symbolic_map_path
-                )
+                for log in logs:
+                    print(logs[log])

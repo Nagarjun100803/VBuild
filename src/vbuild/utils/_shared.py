@@ -1,10 +1,14 @@
 from vbuild.utils.config import Config
-from vbuild.utils.jcl_templates import (
-    CompileBMSJClTemplate,
-    CompileCICSCobolJCLTemplate,
-    CompileCobolJCLTemplate,
+from vbuild.utils.jcls import (
+    CompileAPAPrefixProgramJCLTemplate,
+    CompileAPBPrefixProgramJCLTemplate,
+    CompileAPCPrefixProgramJCLTemplate,
+    CompileASMProgramJCLTemplate,
+    CompileBMSProgramJCLTemplate,
+    CompilePureCICSProgramJCLTemplate,
+    JCLTemplate,
+    SourceCodeType,
 )
-from vbuild.utils.meta import SourceCodeType
 
 APP_NAME = "vbuild"
 
@@ -12,24 +16,41 @@ SUCCESS_RETURN_CODES = ("CC 0000", "CC 0004")
 
 
 def get_jcl(source_code_type: SourceCodeType, member_name: str, config: Config) -> str:
-    match source_code_type:
-        case SourceCodeType.cobol:
-            return CompileCobolJCLTemplate(
-                copy_library_pds=config.copy_library_pds,
-                source_library_pds=config.source_library_pds,
-                load_library_pds=config.load_library_pds,
-                source_library_member=member_name,
-            ).get_jcl()
-        case SourceCodeType.cics:
-            return CompileCICSCobolJCLTemplate(
-                source_library_pds=config.source_library_pds,
-                source_library_member=member_name,
-                symbolic_map_pds=config.symbolic_map_pds,
-            ).get_jcl()
-        case SourceCodeType.bms:
-            return CompileBMSJClTemplate(
-                source_library_pds=config.source_library_pds,
-                source_library_member=member_name,
-                symbolic_map_pds=config.symbolic_map_pds,
-                load_library_member=config.load_library_pds,
-            ).get_jcl()
+
+    if source_code_type not in SourceCodeType:
+        raise ValueError(f"Invalid source code type {source_code_type}.")
+
+    template_mapper: dict[str, JCLTemplate] = {
+        SourceCodeType.APA_PREFIX: CompileAPAPrefixProgramJCLTemplate(
+            source_library_pds=config.source_library_pds,
+            source_library_member=member_name,
+            load_library_pds=config.load_library_pds,
+        ),
+        SourceCodeType.APB_PREFIX: CompileAPBPrefixProgramJCLTemplate(
+            source_library_pds=config.source_library_pds,
+            source_library_member=member_name,
+            load_library_pds=config.load_library_pds,
+        ),
+        SourceCodeType.APC_PREFIX: CompileAPCPrefixProgramJCLTemplate(
+            source_library_pds=config.source_library_pds,
+            source_library_member=member_name,
+            load_library_pds=config.load_library_pds,
+        ),
+        SourceCodeType.ONL_ONLY: CompilePureCICSProgramJCLTemplate(
+            source_library_pds=config.source_library_pds,
+            source_library_member=member_name,
+            load_library_pds=config.load_library_pds,
+        ),
+        SourceCodeType.BMS: CompileBMSProgramJCLTemplate(
+            source_library_pds=config.source_library_pds,
+            source_library_member=member_name,
+            load_library_pds=config.load_library_pds,
+        ),
+        SourceCodeType.ASM: CompileASMProgramJCLTemplate(
+            source_library_pds=config.source_library_pds,
+            source_library_member=member_name,
+            load_library_pds=config.load_library_pds,
+        ),
+    }
+
+    return template_mapper[source_code_type].get_jcl()

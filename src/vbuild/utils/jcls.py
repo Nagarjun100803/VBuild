@@ -4,10 +4,10 @@ from enum import StrEnum
 
 
 class SourceCodeType(StrEnum):
-    APA_PREFIX = "apa-prefix"
-    APB_PREFIX = "apb-prefix"
-    APC_PREFIX = "apc-prefix"
-    ONL_ONLY = "onl-only"
+    APA_PREFIX = "apa"
+    APB_PREFIX = "apb"
+    APC_PREFIX = "apc"
+    ONL_ONLY = "onl"
     BMS = "bms"
     ASM = "asm"
 

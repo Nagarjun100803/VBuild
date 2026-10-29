@@ -16,11 +16,11 @@ class Config:
     source_library_pds: str
     copy_library_pds: str
     load_library_pds: str
-    symbolic_map_pds: str
+    # symbolic_map_pds: str
 
     source_library_path: Path
-    copy_library_path: Path
-    symbolic_map_path: Path
+    # copy_library_path: Path
+    # symbolic_map_path: Path
 
     @property
     def _username(self) -> str:

@@ -16,13 +16,10 @@ user_id=
 [remote_datasets]
 source_library_pds=
 copy_library_pds=
-symbolic_map_pds=
 load_library_pds=
 
 [local_files]
 source_library_path=
-copy_library_path=
-symbolic_map_path=
 """
 
 

@@ -1,55 +1,54 @@
-from pathlib import Path
-from typing import Annotated
+# from pathlib import Path
+# from typing import Annotated
 
-import typer
+# import typer
 
-from vbuild.api.client import APIClient
-from vbuild.utils._shared import SUCCESS_RETURN_CODES
-from vbuild.utils.authentication import resolve_credentials
-from vbuild.utils.cli import get_rich_toolkit
-from vbuild.utils.config import load_config_file
-from vbuild.utils.jcl_templates import RunCobolJCLTemplate
+# from vbuild.api.client import APIClient
+# from vbuild.utils._shared import SUCCESS_RETURN_CODES
+# from vbuild.utils.authentication import resolve_credentials
+# from vbuild.utils.cli import get_rich_toolkit
+# from vbuild.utils.config import load_config_file
 
-run_app = typer.Typer(rich_markup_mode="rich", no_args_is_help=True)
-
-
-def _get_jcl(member_name: str, load_library_pds: str) -> str:
-    return RunCobolJCLTemplate(
-        load_library_pds=load_library_pds, load_library_member=member_name
-    ).get_jcl()
+# run_app = typer.Typer(rich_markup_mode="rich", no_args_is_help=True)
 
 
-@run_app.command(name="run")
-def run(file_path: Annotated[Path, typer.Argument(help="File path to run.")]):
-    """Run the Cobol program."""
+# def _get_jcl(member_name: str, load_library_pds: str) -> str:
+#     return RunCobolJCLTemplate(
+#         load_library_pds=load_library_pds, load_library_member=member_name
+#     ).get_jcl()
 
-    credentials = resolve_credentials()
-    config = load_config_file()
-    toolkit = get_rich_toolkit()
 
-    if not file_path.is_file():
-        toolkit.print("No such file exist.")
-        raise typer.Exit(1)
+# @run_app.command(name="run")
+# def run(file_path: Annotated[Path, typer.Argument(help="File path to run.")]):
+#     """Run the Cobol program."""
 
-    member_name = file_path.stem.upper()
-    jcl = _get_jcl(member_name, config.load_library_pds)
+#     credentials = resolve_credentials()
+#     config = load_config_file()
+#     toolkit = get_rich_toolkit()
 
-    with APIClient(  # noqa: SIM117
-        host=config.host,
-        port=config.port,
-        verify=config.verify,
-        auth=(credentials.username, credentials.password.get_secret_value()),
-    ) as client:
-        with toolkit.progress("Running...", transient=True) as progress:
-            with client.handle_http_error(progress):
-                job = client.submit_job(jcl)
+#     if not file_path.is_file():
+#         toolkit.print("No such file exist.")
+#         raise typer.Exit(1)
 
-            # TODO: Need to handle TimeOutError.
-            job_output = client.poll_job(job_name=job.job_name, job_id=job.job_id)
-            if job_output.return_code in SUCCESS_RETURN_CODES:
-                output_content = client.get_job_output(
-                    job_name=job_output.job_name, job_id=job_output.job_id
-                )
-                toolkit.print(f"[bold]{output_content}[/]")
-            else:
-                toolkit.print(f"😔 Return Code : {job_output.return_code}")
+#     member_name = file_path.stem.upper()
+#     jcl = _get_jcl(member_name, config.load_library_pds)
+
+#     with APIClient(
+#         host=config.host,
+#         port=config.port,
+#         verify=config.verify,
+#         auth=(credentials.username, credentials.password.get_secret_value()),
+#     ) as client:
+#         with toolkit.progress("Running...", transient=True) as progress:
+#             with client.handle_http_error(progress):
+#                 job = client.submit_job(jcl)
+
+#             # TODO: Need to handle TimeOutError.
+#             job_output = client.poll_job(job_name=job.job_name, job_id=job.job_id)
+#             if job_output.return_code in SUCCESS_RETURN_CODES:
+#                 output_content = client.get_job_output(
+#                     job_name=job_output.job_name, job_id=job_output.job_id
+#                 )
+#                 toolkit.print(f"[bold]{output_content}[/]")
+#             else:
+#                 toolkit.print(f"😔 Return Code : {job_output.return_code}")
