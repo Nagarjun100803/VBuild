@@ -14,3 +14,4 @@ cobol/
 vbuild.toml
 .vbuild.meta.json
 logs
+vbuild.old.toml

@@ -1,4 +1,5 @@
 import json
+from functools import lru_cache
 from pathlib import Path
 from typing import Literal, Self
 
@@ -26,10 +27,11 @@ class SourceFileMeta(BaseModel):
 
 
 class FilesMetadata(BaseModel):
-    copy_books: dict[str, list[str]]
+    copy_books: dict[str, list[Path]]
     program_files: dict[str, SourceFileMeta]
 
 
+@lru_cache
 def load_files_metadata(start: Path | None = None) -> FilesMetadata:
     current = (start or Path.cwd()).resolve()
 

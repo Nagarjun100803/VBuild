@@ -1,8 +1,10 @@
 from collections import defaultdict, deque
 from pathlib import Path
+from typing import Annotated
 
 import rich
 import typer
+from pydantic import BaseModel
 from rich.progress import (
     Progress,
     SpinnerColumn,
@@ -15,13 +17,21 @@ from vbuild.api.client import APIClient
 from vbuild.utils._shared import SUCCESS_RETURN_CODES, get_jcl
 from vbuild.utils.authentication import resolve_credentials
 from vbuild.utils.config import load_config_file
+from vbuild.utils.diff import get_last_merge
 from vbuild.utils.meta import SourceFileMeta, load_files_metadata
 
 
 class CircularDependencyError(Exception): ...
 
 
-def get_build_order() -> dict[str, SourceFileMeta]:
+class ResolvedProgramFiles(BaseModel):
+    copybooks: list[str]
+    program_files: dict[str, SourceFileMeta]
+
+
+def get_build_order(
+    affected_program_files: set[Path] | None = None,
+) -> ResolvedProgramFiles:
     """Returns the build order by performing topological sort using Kahn's algorithm."""
 
     # TODO Need to get affected files using commit hash. get all affected files.
@@ -29,15 +39,24 @@ def get_build_order() -> dict[str, SourceFileMeta]:
     # - Recursively get all their dependencies also.
     # - Solve it using kahn's algorithm.
 
-    files_metadata = load_files_metadata().program_files
+    files_metadata = load_files_metadata()
+    if affected_program_files:
+        files_to_build = {
+            file.resolve().as_posix(): files_metadata.program_files[
+                file.resolve().as_posix()
+            ]
+            for file in affected_program_files
+        }
+    else:
+        files_to_build = files_metadata.program_files
     dependency_map = defaultdict(list)
 
     # Initialize in-degree as 0 for all files.
-    in_degree = {file_path: 0 for file_path in files_metadata}
+    in_degree = {file_path: 0 for file_path in files_to_build}
 
     dependencies: set[tuple[str, str]] = set()
-    for caller_file_path in files_metadata:
-        for callee_file_metadata in files_metadata[caller_file_path].static_calls:
+    for caller_file_path in files_to_build:
+        for callee_file_metadata in files_to_build[caller_file_path].static_calls:
             dependencies.add((callee_file_metadata.path.as_posix(), caller_file_path))
 
     # Populate in-degree value.
@@ -47,7 +66,7 @@ def get_build_order() -> dict[str, SourceFileMeta]:
 
     # Initialize the queue with nodes has 0 in degree right now.
     queue = deque(
-        file_path for file_path in files_metadata if in_degree[file_path] == 0
+        file_path for file_path in files_to_build if in_degree[file_path] == 0
     )
     topological_order: list[str] = []
 
@@ -61,34 +80,63 @@ def get_build_order() -> dict[str, SourceFileMeta]:
             if in_degree[dependent_file] == 0:
                 queue.append(dependent_file)
 
-    if len(topological_order) != len(files_metadata):
+    if len(topological_order) != len(files_to_build):
         raise CircularDependencyError("Circular dependency exist.")
-    return {file_path: files_metadata[file_path] for file_path in topological_order}
+    return ResolvedProgramFiles(
+        program_files={
+            file_path: files_to_build[file_path] for file_path in topological_order
+        },
+        copybooks=[Path(cp).resolve().as_posix() for cp in files_metadata.copy_books],
+    )
+
+
+def get_affected_files_by_last_merge() -> ResolvedProgramFiles:
+
+    commit = get_last_merge()
+    if not commit:
+        raise typer.Exit(1)
+
+    files_metadata = load_files_metadata()
+
+    affected_files = {file[1] for file in commit.affected_files}
+
+    copy_books: set[Path] = set()
+    program_files: set[Path] = set()
+
+    for file in affected_files:
+        if file.suffix.lower() == ".cpy":
+            copy_books.add(file)
+            program_files.update(
+                Path(pf) for pf in files_metadata.copy_books[file.as_posix()]
+            )
+        elif file.suffix.lower() in (".cbl", ".asm"):
+            program_files.add(file)
+        else:
+            print(f"Omitted file {file}.")
+
+    return get_build_order(program_files)
 
 
 build_app = typer.Typer(rich_markup_mode="rich")
 
 
 @build_app.command(name="build")
-def build():
-    "Build the programs files"
-
-    # NOTE Assume the target folder is scanned and metadata extracted by one method/service
-    # * and put it in the `.vbuild.meta.json` We use that file to build.
-
+def build_programs(
+    branch: Annotated[
+        str | None,
+        typer.Option(
+            "--branch", "-b", help="Get latest merge from the branch to build."
+        ),
+    ] = None,
+):
     credentials = resolve_credentials()
 
-    config = load_config_file()
-    all_program_files: dict[str, SourceFileMeta] = get_build_order()
+    if branch is not None:
+        programs_to_build = get_affected_files_by_last_merge()
+    else:
+        programs_to_build = get_build_order()
 
-    # Separate cobol files and cobol copybooks.
-    copy_books: list[str] = []
-    program_files: list[str] = []
-    for file_path in all_program_files:
-        if file_path.endswith(".cpy"):
-            copy_books.append(file_path)
-        else:
-            program_files.append(file_path)
+    config = load_config_file()
 
     with APIClient(  # noqa: SIM117
         host=config.host,
@@ -103,21 +151,23 @@ def build():
             TimeElapsedColumn(),
             transient=True,
         ) as progress:
-            for copy_book in copy_books:
-                content = Path(copy_book).read_text(encoding="utf-8")
+            for copybook in programs_to_build.copybooks:
+                content = Path(copybook).read_text(encoding="utf-8")
                 client.write_dataset(
-                    name=f"{config.copy_library_pds}({Path(copy_book).stem.upper()})",
+                    name=f"{config.copy_library_pds}({Path(copybook).stem.upper()})",
                     content=content,
                 )
-            task_id = progress.add_task("Building...🛠️", total=len(program_files))
-            for file_path in program_files:
+            task_id = progress.add_task(
+                "Building...🛠️", total=len(programs_to_build.program_files)
+            )
+            for file_path in programs_to_build.program_files:
                 file_path = Path(file_path)
                 progress.update(
                     task_id,
                     description=f"Compiling {Path(*file_path.parts[-3:]).as_posix()}.",
                 )
                 jcl = get_jcl(
-                    source_code_type=all_program_files[
+                    source_code_type=programs_to_build.program_files[
                         file_path.as_posix()
                     ].source_code_type,  # pyright: ignore[reportArgumentType]
                     # NOTE: Here it won't get .cpy file so I add pyright: ignore[reportArgumentType]
@@ -146,3 +196,6 @@ def build():
                     raise typer.Exit(1)
             total_time_taken = progress.tasks[task_id].elapsed
     rich.print(f"Build successful in '{total_time_taken:.2f}s'.")
+    rich.print("List of programs build.")
+    for program in programs_to_build.program_files:
+        rich.print(program)

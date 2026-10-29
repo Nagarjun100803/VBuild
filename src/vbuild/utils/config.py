@@ -1,5 +1,6 @@
 import tomllib
 from dataclasses import dataclass
+from functools import lru_cache
 from pathlib import Path
 
 import rich
@@ -30,6 +31,7 @@ class Config:
 # TODO: Need to pass the toolkit here to handle json output option.
 
 
+@lru_cache
 def load_config_file(start: Path | None = None) -> Config:
     current = (start or Path.cwd()).resolve()
 

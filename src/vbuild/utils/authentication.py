@@ -1,5 +1,6 @@
 import os
 import sys
+from functools import lru_cache
 from typing import Literal
 
 import keyring
@@ -18,6 +19,7 @@ class Credentials(BaseModel):
     type: Literal["os", "env"]
 
 
+@lru_cache
 def resolve_credentials() -> Credentials:
     """Resolve the authenticated user credentials."""
 
