@@ -83,7 +83,7 @@ def get_last_merge() -> Commit | None:
 #         type="merge",
 #         affected_files=[
 #             ("M", Path("srclib/AMPAZ8F1.cbl")),
-#             ("M", Path("srclib/PC11CPBK.cpy")),
+#             # ("M", Path("srclib/PC11CPBK.cpy")),
 #             ("D", Path("srclib/readme.md")),
 #         ],
 #     )

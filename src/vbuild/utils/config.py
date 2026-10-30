@@ -6,6 +6,8 @@ from pathlib import Path
 import rich
 import typer
 
+from vbuild.utils.project import get_project_root
+
 
 @dataclass(frozen=True)
 class Config:
@@ -31,22 +33,19 @@ class Config:
 # TODO: Need to pass the toolkit here to handle json output option.
 
 
-@lru_cache
-def load_config_file(start: Path | None = None) -> Config:
-    current = (start or Path.cwd()).resolve()
+@lru_cache(maxsize=1)
+def load_config_file() -> Config:
+    """Loads local dev configuration file named `vbuild.toml` from project root directory."""
 
-    target_directory: Path | None = None
-    for directory in (current, *current.parents):
-        if (directory / "vbuild.toml").is_file():
-            target_directory = directory
+    project_root = get_project_root()
 
-    if target_directory is None:
+    if not (project_root / "vbuild.toml").is_file():
         rich.print(
             "Error: No `vbuild.toml` is found in a project directory. Run 'vbuild init' to initialize it.",
         )
         raise typer.Exit(1)
 
-    with open(target_directory / "vbuild.toml", "rb") as f:
+    with open(project_root / "vbuild.toml", "rb") as f:
         content = tomllib.load(f)
         zosmf = content["zosmf"]
         remote_datasets = content["remote_datasets"]

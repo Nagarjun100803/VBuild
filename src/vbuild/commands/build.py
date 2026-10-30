@@ -19,6 +19,7 @@ from vbuild.utils.authentication import resolve_credentials
 from vbuild.utils.config import load_config_file
 from vbuild.utils.diff import get_last_merge
 from vbuild.utils.meta import SourceFileMeta, load_files_metadata
+from vbuild.utils.project import get_project_root
 
 
 class CircularDependencyError(Exception): ...
@@ -40,15 +41,19 @@ def get_build_order(
     # - Solve it using kahn's algorithm.
 
     files_metadata = load_files_metadata()
+
     if affected_program_files:
         files_to_build = {
-            file.resolve().as_posix(): files_metadata.program_files[
-                file.resolve().as_posix()
-            ]
+            file.as_posix(): files_metadata.program_files[file.as_posix()]
             for file in affected_program_files
         }
+        copy_books = [
+            Path(cp).as_posix() for cp in files_to_build if Path(cp).suffix == ".cpy"
+        ]
     else:
         files_to_build = files_metadata.program_files
+        copy_books = [Path(cp).as_posix() for cp in files_metadata.copy_books]
+
     dependency_map = defaultdict(list)
 
     # Initialize in-degree as 0 for all files.
@@ -82,11 +87,12 @@ def get_build_order(
 
     if len(topological_order) != len(files_to_build):
         raise CircularDependencyError("Circular dependency exist.")
+
     return ResolvedProgramFiles(
         program_files={
             file_path: files_to_build[file_path] for file_path in topological_order
         },
-        copybooks=[Path(cp).resolve().as_posix() for cp in files_metadata.copy_books],
+        copybooks=copy_books,
     )
 
 
@@ -96,18 +102,21 @@ def get_affected_files_by_last_merge() -> ResolvedProgramFiles:
     if not commit:
         raise typer.Exit(1)
 
+    project_root = get_project_root()
+
     files_metadata = load_files_metadata()
 
-    affected_files = {file[1] for file in commit.affected_files}
+    affected_files = {project_root / file[1] for file in commit.affected_files}
 
-    copy_books: set[Path] = set()
     program_files: set[Path] = set()
 
     for file in affected_files:
         if file.suffix.lower() == ".cpy":
-            copy_books.add(file)
+            program_files.add(file)
+            # Add all copy book dependency program to build.
             program_files.update(
-                Path(pf) for pf in files_metadata.copy_books[file.as_posix()]
+                (project_root / pf).resolve()
+                for pf in files_metadata.copy_books[file.as_posix()]
             )
         elif file.suffix.lower() in (".cbl", ".asm"):
             program_files.add(file)
