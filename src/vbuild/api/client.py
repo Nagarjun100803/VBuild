@@ -25,7 +25,7 @@ class APIClient(httpx.Client):
     ) -> None:
         super().__init__(
             base_url=f"https://{host}:{port}/zosmf",
-            timeout=httpx.Timeout(5),
+            timeout=httpx.Timeout(30),
             headers={"X-CSRF-ZOSMF-HEADER": "*"},
             verify=verify,
             auth=auth,
