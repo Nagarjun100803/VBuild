@@ -1,3 +1,4 @@
+import sys
 from collections import defaultdict, deque
 from pathlib import Path
 from typing import Annotated
@@ -16,7 +17,7 @@ from rich.progress import (
 from vbuild.api.client import APIClient
 from vbuild.utils._shared import SUCCESS_RETURN_CODES, get_jcl
 from vbuild.utils.authentication import resolve_credentials
-from vbuild.utils.config import load_config_file
+from vbuild.utils.config import load_config_file, load_config_from_env
 from vbuild.utils.diff import get_last_merge
 from vbuild.utils.meta import SourceFileMeta, load_files_metadata
 from vbuild.utils.project import get_project_root
@@ -43,13 +44,17 @@ def get_build_order(
     files_metadata = load_files_metadata()
 
     if affected_program_files:
-        files_to_build = {
-            file.as_posix(): files_metadata.program_files[file.as_posix()]
-            for file in affected_program_files
-        }
-        copy_books = [
-            Path(cp).as_posix() for cp in files_to_build if Path(cp).suffix == ".cpy"
-        ]
+        # Ignore copybook files from here. and only compile program files.
+        copy_books: list[str] = []
+        files_to_build: dict[str, SourceFileMeta] = {}
+
+        for file in affected_program_files:
+            if file.suffix == ".cpy":
+                copy_books.append(file.as_posix())
+            else:
+                files_to_build.update(
+                    {file.as_posix(): files_metadata.program_files[file.as_posix()]}
+                )
     else:
         files_to_build = files_metadata.program_files
         copy_books = [Path(cp).as_posix() for cp in files_metadata.copy_books]
@@ -145,7 +150,19 @@ def build_programs(
     else:
         programs_to_build = get_build_order()
 
-    config = load_config_file()
+    print("List of program files to build.")
+    print("Copy books")
+    print(programs_to_build.copybooks)
+    print("Program files")
+    print(programs_to_build.program_files)
+
+    if not sys.stdin.isatty():
+        config = load_config_from_env()
+    else:
+        rich.print(
+            "Warning: Running pipeline build command in an interactive terminal."
+        )
+        config = load_config_file()
 
     with APIClient(  # noqa: SIM117
         host=config.host,

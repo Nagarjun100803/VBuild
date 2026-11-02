@@ -20,8 +20,6 @@ source_library_pds=
 copy_library_pds=
 load_library_pds=
 
-[local_files]
-source_library_path=
 """
 
 

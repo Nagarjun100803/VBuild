@@ -28,17 +28,18 @@ def resolve_credentials() -> Credentials:
     # * Prefer keyring for secure local developer workflow and env for ci/cd automation.
     # * env works for both local developer workflow but not recommended.
 
-    config = load_config_file()
-
     # 1. Priority for env variable.
+    user_id_env = os.getenv("VBUILD_USERID")
     password_env = os.getenv("VBUILD_PASSWORD")
 
-    if password_env:
+    if password_env and user_id_env:
         if sys.stdin.isatty():
             rich.print("Warning: Using environment variables for local dev workflow.")
         return Credentials(
-            username=config._username, password=SecretStr(password_env), type="env"
+            username=user_id_env.lower(), password=SecretStr(password_env), type="env"
         )
+
+    config = load_config_file()
 
     # 2. Fallback for os keyring.
     password = keyring.get_password(
