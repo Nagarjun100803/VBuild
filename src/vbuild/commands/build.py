@@ -192,13 +192,12 @@ def build_programs(
                     task_id,
                     description=f"Compiling {Path(*file_path.parts[-3:]).as_posix()}.",
                 )
+                metadata = programs_to_build.program_files[file_path.as_posix()]
                 jcl = get_jcl(
-                    source_code_type=programs_to_build.program_files[
-                        file_path.as_posix()
-                    ].source_code_type,  # pyright: ignore[reportArgumentType]
-                    # NOTE: Here it won't get .cpy file so I add pyright: ignore[reportArgumentType]
+                    source_code_type=metadata.source_code_type,
                     member_name=file_path.stem.upper(),
                     config=config,
+                    load_type=metadata.load_type,
                 )
                 source_code = file_path.read_text()
 

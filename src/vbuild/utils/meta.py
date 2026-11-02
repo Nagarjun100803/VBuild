@@ -1,11 +1,11 @@
 import json
 from functools import lru_cache
 from pathlib import Path
-from typing import Self
+from typing import Literal, Self
 
 import rich
 import typer
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from vbuild.utils.jcls import SourceCodeType
 from vbuild.utils.project import get_project_root
@@ -28,6 +28,9 @@ class SourceFileMeta(BaseModel):
     source_code_type: SourceCodeType
     static_calls: list[StaticCallMeta] = Field(default_factory=list)
     has_dynamic_calls: bool = False
+    load_type: Literal["batch", "online"]
+
+    model_config = ConfigDict(extra="ignore")
 
 
 class FilesMetadata(BaseModel):

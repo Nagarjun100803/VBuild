@@ -71,19 +71,3 @@ def get_last_merge() -> Commit | None:
         affected_files=affected_files,
         type="merge",
     )
-
-
-# def get_last_merge() -> Commit | None:
-#     return Commit(
-#         author="arjun",
-#         hash_="1234",
-#         date=" ",
-#         parents=("123", "345"),
-#         message="dummy merge",
-#         type="merge",
-#         affected_files=[
-#             ("M", Path("srclib/AMPAZ8F1.cbl")),
-#             # ("M", Path("srclib/PC11CPBK.cpy")),
-#             ("D", Path("srclib/readme.md")),
-#         ],
-#     )

@@ -18,8 +18,8 @@ user_id=
 [remote_datasets]
 source_library_pds=
 copy_library_pds=
-load_library_pds=
-
+batch_load_library_pds=
+online_load_library_pds=
 """
 
 

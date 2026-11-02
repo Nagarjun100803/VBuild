@@ -18,7 +18,9 @@ class Config:
 
     source_library_pds: str
     copy_library_pds: str
-    load_library_pds: str
+    batch_load_library_pds: str
+    online_load_library_pds: str
+
     # symbolic_map_pds: str
 
     # source_library_path: Path
@@ -42,7 +44,8 @@ def load_config_from_env() -> Config:
         "verify": "ZOSMF_VERIFY",
         "source_library_pds": "SRCLIB",
         "copy_library_pds": "COPYLIB",
-        "load_library_pds": "LOADLIB",
+        "batch_load_library_pds": "BATCH_LOADLIB",
+        "online_load_library_pds": "ONLINE_LOADLIB",
     }
 
     config = {
@@ -51,7 +54,8 @@ def load_config_from_env() -> Config:
         "verify": os.getenv("ZOSMF_VERIFY", None) or False,
         "source_library_pds": os.getenv("SRCLIB"),
         "copy_library_pds": os.getenv("COPYLIB"),
-        "load_library_pds": os.getenv("LOADLIB"),
+        "batch_load_library_pds": os.getenv("BATCH_LOADLIB"),
+        "online_load_library_pds": os.getenv("ONLINE_LOADLIB"),
     }
 
     missing_env = [env_names[env] for env in config if config[env] is None]

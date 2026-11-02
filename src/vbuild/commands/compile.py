@@ -53,14 +53,6 @@ def write_job_logs(job_id: str, job_name: str, logs: dict[str, str]):
 @compile_app.command(name="compile")
 def compile(
     file_path: Annotated[Path, typer.Argument(help="File path to compile.")],
-    source_code_type: Annotated[
-        SourceCodeType | None,
-        typer.Option(
-            "--source-code-type",
-            "-sct",
-            help="Source code type. If not provided, it will load from the metadata file.",
-        ),
-    ] = None,
     write_logs: Annotated[
         bool,
         typer.Option(
@@ -82,28 +74,28 @@ def compile(
         logger.error("No such file exist.")
         raise typer.Exit(1)
 
-    target_source_code_type: SourceCodeType
+    files_metadata = load_files_metadata().program_files
 
-    if source_code_type is None:
-        logger.debug("Source code type is empty, loading from metadata file.")
-        files_metadata = load_files_metadata().program_files
+    logger.debug("Load metadata from 'vbuild.meta.json'.")
+    file_metadata = files_metadata.get(file_path.resolve().as_posix(), None)
+    if file_metadata is None:
+        logger.error(f"No metadata for file {file_path.resolve().as_posix()}")
+        raise typer.Exit(1)
 
-        file_metadata = files_metadata.get(file_path.resolve().as_posix(), None)
-        if file_metadata is None:
-            logger.error(f"No metadata for file {file_path.resolve().as_posix()}")
-            raise typer.Exit(1)
-
-        target_source_code_type = file_metadata.source_code_type
-
-    else:
-        target_source_code_type = source_code_type
-
-    logger.debug(f"Target source code type is {target_source_code_type.value}")
+    target_source_code_type = file_metadata.source_code_type
+    logger.debug(f"Source code type is '{target_source_code_type}'")
+    logger.debug(f"Load Type is '{file_metadata.load_type}'")
 
     config = load_config_file()
     source_code = file_path.read_text()
     member_name = file_path.stem.upper()
-    jcl = get_jcl(target_source_code_type, member_name, config)
+
+    jcl = get_jcl(
+        source_code_type=target_source_code_type,
+        member_name=member_name,
+        load_type=file_metadata.load_type,
+        config=config,
+    )
 
     with APIClient(
         host=config.host,
@@ -124,7 +116,7 @@ def compile(
             logger.info(f"Compilation success with {job_output.return_code}")
         else:
             logger.error(f"Compilation failed with {job_output.return_code}")
-            logger.debug("Fetching spool logs.")
+            logger.debug("Fetch spool logs.")
             logs = client.get_job_logs(
                 job_id=job_output.job_id, job_name=job_output.job_name
             )
