@@ -4,31 +4,17 @@ from pathlib import Path
 from typing import Annotated
 
 import typer
-from rich.logging import RichHandler
 
 from vbuild.api.client import APIClient
 from vbuild.utils._shared import SUCCESS_RETURN_CODES, get_jcl
 from vbuild.utils.authentication import resolve_credentials
 from vbuild.utils.config import load_config_file
-from vbuild.utils.jcls import SourceCodeType
 from vbuild.utils.meta import load_files_metadata
 from vbuild.utils.project import get_project_root
 
 compile_app = typer.Typer(rich_markup_mode="rich", no_args_is_help=True)
 
-logger = logging.getLogger("compiler")
-logger.propagate = False
-
-
-def set_up_logging(verbose: bool):
-    """Setup the logger for compile command."""
-    log_level = logging.DEBUG if verbose else logging.INFO
-    logger.handlers.clear()
-    logger.setLevel(log_level)
-    rich_handler = RichHandler(
-        rich_tracebacks=True, show_path=False, show_time=False, show_level=False
-    )
-    logger.addHandler(rich_handler)
+logger = logging.getLogger(__name__)
 
 
 def write_job_logs(job_id: str, job_name: str, logs: dict[str, str]):
@@ -61,13 +47,9 @@ def compile(
             help="Write logs to a file instead of displaying them in the terminal when compilation fails (return code > 4).",
         ),
     ] = False,
-    verbose: Annotated[
-        bool, typer.Option("--verbose", "-v", help="Verbose output.")
-    ] = False,
 ):
     """Compile APA/APB/APC/ONL/BMS/ASM programs."""
 
-    set_up_logging(verbose=verbose)
     credentials = resolve_credentials()
 
     if not file_path.is_file():

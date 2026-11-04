@@ -1,8 +1,11 @@
+import logging
 import subprocess as sp
 from pathlib import Path
 from typing import Literal
 
 from pydantic import BaseModel
+
+logger = logging.getLogger(__name__)
 
 
 class Commit(BaseModel):
@@ -20,8 +23,8 @@ def get_last_merge() -> Commit | None:
         args=["git", "switch", "dev"], check=False, capture_output=True, text=True
     )
     if git_switch_to_dev_branch_cmd.returncode != 0:
-        print("Error occur while switching the branch to 'dev'")
-        print(git_switch_to_dev_branch_cmd)
+        logger.error("Error occur while switching the branch to 'dev'")
+        logger.info(git_switch_to_dev_branch_cmd)
         return
 
     git_diff_cmd: sp.CompletedProcess = sp.run(
@@ -31,8 +34,8 @@ def get_last_merge() -> Commit | None:
         check=False,
     )
     if git_diff_cmd.returncode != 0:
-        print("Error occur while performing 'git diff'.")
-        print(git_diff_cmd)
+        logger.error("Error occur while performing 'git diff'.")
+        logger.info(git_diff_cmd)
         return
 
     git_diff_cmd_output: str = git_diff_cmd.stdout
@@ -46,8 +49,8 @@ def get_last_merge() -> Commit | None:
     )
 
     if git_show_cmd.returncode != 0:
-        print("Error occur while performing 'git show HEAD'.")
-        print(git_show_cmd)
+        logger.error("Error occur while performing 'git show HEAD'.")
+        logger.info(git_show_cmd)
         return
 
     git_show_cmd_output: str = git_show_cmd.stdout
