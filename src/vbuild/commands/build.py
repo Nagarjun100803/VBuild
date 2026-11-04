@@ -148,10 +148,9 @@ def get_affected_files_by_last_merge() -> ResolvedProgramFiles:
 
 build_app = typer.Typer(rich_markup_mode="rich")
 
-project_root = get_project_root()
-
 
 def _get_absolute_path(path: Path | str) -> Path:
+    project_root = get_project_root()
     return Path(path).relative_to(project_root)
 
 
