@@ -1,6 +1,7 @@
 from collections.abc import Generator
 from contextlib import contextmanager
 from datetime import timedelta
+from pathlib import Path
 from textwrap import dedent
 from time import monotonic, sleep
 from urllib.parse import quote
@@ -10,6 +11,7 @@ import typer
 from rich_toolkit.progress import Progress
 
 from vbuild.api._models import Job, JobFile
+from vbuild.utils.shiplist import ShiplistTemplate
 
 POLL_TIMEOUT = timedelta(seconds=60)
 POLL_INTERVAL = 1
@@ -51,9 +53,25 @@ class APIClient(httpx.Client):
         response.raise_for_status()
         return response.text
 
+    def read_file(self, path: Path) -> str:
+        response = self.get(f"/restfiles/fs/{quote(Path(path).as_posix(), safe='')}")
+        response.raise_for_status()
+        return response.text
+
     def write_dataset(self, name: str, content: str) -> None:
         response = self.put(
             f"/restfiles/ds/{quote(name, safe='')}",
+            content=content,
+            headers={
+                "Content-Type": "text/plain; charset=utf-8",
+                "X-IBM-Data-Type": "text",
+            },
+        )
+        response.raise_for_status()
+
+    def write_file(self, name: Path, content: str) -> None:
+        response = self.put(
+            f"/restfiles/fs/{quote(name.as_posix())}",
             content=content,
             headers={
                 "Content-Type": "text/plain; charset=utf-8",

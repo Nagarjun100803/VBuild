@@ -14,6 +14,7 @@ from vbuild.utils.config import load_config_file, load_config_from_env
 from vbuild.utils.diff import get_last_merge
 from vbuild.utils.meta import SourceFileMeta, load_files_metadata
 from vbuild.utils.project import get_project_root
+from vbuild.utils.shiplist import ShiplistTemplate
 
 logger = logging.getLogger(__name__)
 
@@ -154,6 +155,30 @@ def _get_absolute_path(path: Path | str) -> Path:
     return Path(path).relative_to(project_root)
 
 
+def _rename_apa_to_apb_program_files(program_file: str) -> str:
+    program_file_name = Path(program_file).stem
+    return (program_file_name[:3] + "B" + program_file_name[4:]).upper()
+
+
+def get_shiplist(resolved_program_files: ResolvedProgramFiles) -> str:
+
+    batch_resources = set()
+    online_resources = set()
+
+    for file, metadata in resolved_program_files.program_files.items():
+        if metadata.load_type == "batch":
+            if metadata.source_code_type == "apa":
+                batch_resources.add(_rename_apa_to_apb_program_files(file))
+            else:
+                batch_resources.add(Path(file).stem.upper())
+        else:
+            online_resources.add(Path(file).stem.upper())
+
+    return ShiplistTemplate(
+        online_resources=online_resources, batch_resources=batch_resources
+    ).get_shiplist()
+
+
 @build_app.command(name="build")
 def build_programs(
     branch: Annotated[
@@ -184,9 +209,11 @@ def build_programs(
     logger.info("Affected files are:")
     logger.info(
         "\n".join(f"'{_get_absolute_path(cp)}'" for cp in programs_to_build.copybooks)
+        or "No copybook files have changed."
     )
     logger.info(
         "\n".join(f"'{_get_absolute_path(p)}'" for p in programs_to_build.program_files)
+        or "No program files have changed."
     )
 
     with APIClient(
@@ -238,3 +265,14 @@ def build_programs(
                 )
                 logger.info(compile_listing)
                 raise typer.Exit(1)
+
+        logger.info("Build success.")
+        logger.info("Generating shiplist.")
+        shiplist = get_shiplist(programs_to_build)
+        logger.info(
+            "Uploading shiplist file to '/usr/lpp/zagent/shiplist/pocshiplist.xml'"
+        )
+        client.write_file(
+            name=Path("usr/lpp/zagent/shiplist/pocshiplist.xml"), content=shiplist
+        )
+        logger.info("Shiplist written successfully.")
