@@ -1,3 +1,4 @@
+import sys
 from typing import Annotated
 
 import rich
@@ -49,6 +50,24 @@ app.add_typer(init_app)
 app.add_typer(auth_app)
 app.add_typer(compile_app)
 app.add_typer(build_app)
+
+
+def compile_shortcut():
+    "Shortcut for executing `vbuild compile` command."
+    args = sys.argv[1:]
+    verbose = False
+    if "-v" in args:
+        args.remove("-v")
+        verbose = True
+    if "--verbose" in args:
+        args.remove("--verbose")
+        verbose = True
+
+    cli_args = ["compile", *args]
+    if verbose:
+        cli_args.insert(0, "--verbose")
+
+    app(cli_args)
 
 
 def main() -> None:
