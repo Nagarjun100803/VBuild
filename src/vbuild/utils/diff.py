@@ -18,9 +18,9 @@ class Commit(BaseModel):
     parents: tuple[str, str] | None = None
 
 
-def get_last_merge() -> Commit | None:
+def get_last_merge(branch_name: str) -> Commit | None:
     git_switch_to_dev_branch_cmd: sp.CompletedProcess = sp.run(
-        args=["git", "switch", "dev"], check=False, capture_output=True, text=True
+        args=["git", "switch", branch_name], check=False, capture_output=True, text=True
     )
     if git_switch_to_dev_branch_cmd.returncode != 0:
         logger.error("Error occur while switching the branch to 'dev'")

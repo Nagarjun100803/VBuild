@@ -15,3 +15,6 @@ vbuild.toml
 .vbuild.meta.json
 logs
 vbuild.old.toml
+input.txt
+migration_versions/
+zmiggit.py

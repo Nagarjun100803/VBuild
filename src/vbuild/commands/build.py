@@ -2,7 +2,7 @@ import logging
 import sys
 from collections import defaultdict, deque
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Literal
 
 import typer
 from pydantic import BaseModel
@@ -111,10 +111,10 @@ def get_build_order(
     )
 
 
-def get_affected_files_by_last_merge() -> ResolvedProgramFiles:
+def get_affected_files_by_last_merge(branch_name: str) -> ResolvedProgramFiles:
 
     logger.debug("Fetch latest merge.")
-    commit = get_last_merge()
+    commit = get_last_merge(branch_name)
     if not commit:
         raise typer.Exit(1)
 
@@ -182,7 +182,7 @@ def get_shiplist(resolved_program_files: ResolvedProgramFiles) -> str:
 @build_app.command(name="build")
 def build_programs(
     branch: Annotated[
-        str | None,
+        Literal["dev", "test", "prod"] | None,
         typer.Option(
             "--branch", "-b", help="Get latest merge from the branch to build."
         ),
@@ -202,7 +202,7 @@ def build_programs(
         config = load_config_file()
 
     if branch is not None:
-        programs_to_build = get_affected_files_by_last_merge()
+        programs_to_build = get_affected_files_by_last_merge(branch_name=branch)
     else:
         programs_to_build = get_build_order()
 
