@@ -1,3 +1,4 @@
+import re
 from collections.abc import Generator
 from contextlib import contextmanager
 from datetime import timedelta
@@ -14,6 +15,7 @@ from vbuild.api._models import Job, JobFile
 
 POLL_TIMEOUT = timedelta(seconds=60)
 POLL_INTERVAL = 1
+CONTROL_CHARS_RE = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
 
 
 class APIClient(httpx.Client):
@@ -104,13 +106,21 @@ class APIClient(httpx.Client):
         response.raise_for_status()
         return [JobFile.model_validate(file) for file in response.json()]
 
+    def _handle_non_printable_chars(self, content: bytes) -> str:
+        """Safely decodes z/OSMF spool bytes, strips non-printable control characters"""
+        raw_text = content.decode(encoding="utf-8", errors="ignore")
+        clean_text = CONTROL_CHARS_RE.sub("", raw_text)
+        return clean_text
+
     def get_job_logs(self, job_name: str, job_id: str) -> dict[str, str]:
         log_files = self.get_job_files(job_name=job_name, job_id=job_id)
         logs: dict[str, str] = {}
         for log_file in log_files:
             response = self.get(log_file.records_url)
             response.raise_for_status()
-            logs.update({log_file.dd_name: response.content.decode()})
+            logs.update(
+                {log_file.dd_name: self._handle_non_printable_chars(response.content)}
+            )
         return logs
 
     def get_job_output(self, job_name: str, job_id: str) -> str:

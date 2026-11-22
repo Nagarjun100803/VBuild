@@ -30,7 +30,7 @@ def write_job_logs(job_id: str, job_name: str, logs: dict[str, str]):
     target_folder.mkdir(parents=True, exist_ok=True)
 
     for ddname, log in logs.items():
-        with open(target_folder / ddname, "w") as f:
+        with open(target_folder / ddname, "w", encoding="utf-8", newline="\n") as f:
             f.write(log)
 
     logger.info(f"Logs written successfully in '{target_folder.as_posix()}' ")
