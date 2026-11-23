@@ -216,6 +216,11 @@ def build_programs(
         or "No program files have changed."
     )
 
+    if not programs_to_build.copybooks and not programs_to_build.program_files:
+        logger.info("No program files/copybooks have changed.")
+        logger.info("Skipping shiplist generation.")
+        raise typer.Exit(10)
+
     with APIClient(
         host=config.host,
         port=config.port,
