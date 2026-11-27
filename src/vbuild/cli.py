@@ -9,6 +9,7 @@ from vbuild.commands import (
     build_app,
     compile_app,
     init_app,
+    test_app,
 )
 from vbuild.logger import setup_logging
 
@@ -50,6 +51,7 @@ app.add_typer(init_app)
 app.add_typer(auth_app)
 app.add_typer(compile_app)
 app.add_typer(build_app)
+app.add_typer(test_app)
 
 
 def compile_shortcut():
